@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nam's Cloud | Secure Access</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700&display=swap" rel="stylesheet">
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
+	<style>
+    /* Thêm CSS chống inspect */
+    body {
+        user-select: none;
+        -webkit-user-select: none;
+    }
+    input[type="password"] {
+        font-family: 'text-security-disc';
+        -webkit-text-security: disc;
+    }
+	</style>
+    <style>
+        body {
+            font-family: 'Montserrat', sans-serif;
+            background: linear-gradient(135deg, #1a1a1a 0%, #4d4d4d 100%);
+        }
+        
+        .password-input {
+            border-bottom: 2px solid rgba(255, 255, 255, 0.5);
+            transition: all 0.3s ease;
+        }
+        
+        .password-input:focus {
+            border-bottom-color: #ffd700;
+        }
+        
+        .submit-btn {
+            background: linear-gradient(135deg, #ffd700 0%, #daa520 100%);
+            box-shadow: 0 4px 15px rgba(255, 215, 0, 0.3);
+            transition: all 0.3s ease;
+        }
+        
+        .submit-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(255, 215, 0, 0.4);
+        }
+        
+        .submit-btn:active {
+            transform: translateY(0);
+        }
+        
+        .gem-button {
+            width: 100px;
+            height: 100px;
+            border-radius: 50%;
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
+            transition: all 0.3s ease;
+            position: absolute;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            color: white;
+            font-weight: 600;
+            text-shadow: 0 1px 3px rgba(0, 0, 0, 0.5);
+        }
+        
+        .gem-button:hover {
+            transform: scale(1.1) rotate(5deg);
+            box-shadow: 0 12px 30px rgba(0, 0, 0, 0.4);
+        }
+        
+        .fade-in {
+            animation: fadeIn 0.5s ease-in-out;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        
+        .slide-up {
+            animation: slideUp 0.5s ease-out;
+        }
+        
+        @keyframes slideUp {
+            from { transform: translateY(20px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+    </style>
+</head>
+
+
+<body class="min-h-screen flex flex-col items-center justify-center p-4">
+    <div id="passwordContainer" class="w-full max-w-md slide-up">
+        <h1 class="text-4xl font-bold text-center mb-8 text-gold-500" style="color: #ffd700; text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);">
+            Truy cập Nam's Cloud
+        </h1>
+        
+        <form id="passwordForm" onsubmit="return checkPassword(event)" class="bg-gray-800 bg-opacity-70 rounded-xl p-8 shadow-2xl backdrop-filter backdrop-blur-sm">
+            <div class="mb-6">
+                <label for="password" class="block text-gray-300 text-sm font-medium mb-2">Mật khẩu</label>
+                <input 
+                    type="password" 
+                    id="password" 
+                    placeholder="Nhập mật khẩu" 
+                    required 
+                    class="password-input w-full bg-transparent text-white text-lg px-3 py-2 outline-none focus:outline-none"
+                >
+            </div>
+            
+            <button type="submit" class="submit-btn w-full py-3 px-4 rounded-lg text-gray-900 font-semibold">
+                Xác nhận
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 inline ml-1" viewBox="0 0 20 20" fill="currentColor">
+                    <path fill-rule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clip-rule="evenodd" />
+                </svg>
+            </button>
+        </form>
+    </div>
+    
+    <div id="buttonContainer" class="relative w-full max-w-xl h-96 mt-12 hidden fade-in"></div>
+    
+    <script>
+		const ENCRYPTED_PASSWORD = "U2FsdGVkX18yEoDlVKOq3hPxxgAUbPJK/Mlnz3lZbfs="; 
+		const ENCRYPTED_SUCCESS_LINK = "U2FsdGVkX19+956kV/+LxLjH5V6p91AAdHIJ6C/VM0klJ9xHYCJRUFExQyzoqLXQXwp5Vqbs5a6DRIB/duUSmjGwSM3yzVboIkcUDYHFjKTPWr4SXB7ih7YHcHDGu2V7U7HAkioJwbQ99U5WToj0RXgQ11NAWx+wj2PcSKk8EpjxHRSYTUS+tYMoDC66tZD0hLSJ5RuOvBVJryhNj63nTg=="; 
+		const ENCRYPTED_FAIL_LINK = "U2FsdGVkX1+wGJ5hMC26woeAEV5JU00PuLIxE+Wvr2vUOjJ6IBKYJQvqFqysDyyZn6s8YzkoMEpY6LYuQCVVjnA56op3FPPMrGDb61khs4qL/rHCXDGdY+LT4kCiyWZV";
+		const SECRET_KEY = "nam_cloud_2023!secure";
+
+		
+
+		function decrypt(data) {
+			try {
+				return CryptoJS.AES.decrypt(data, SECRET_KEY).toString(CryptoJS.enc.Utf8);
+			} catch {
+				return null;
+			}
+		}
+		
+
+		let debugAttempts = 0;
+		const detectDevTools = () => {
+			const threshold = 160;
+			const widthDiff = window.outerWidth - window.innerWidth;
+			const heightDiff = window.outerHeight - window.innerHeight;
+			
+			if(widthDiff > threshold || heightDiff > threshold || window.console.firebug) {
+				debugAttempts++;
+				if(debugAttempts > 2) {
+					window.location.href = decrypt(ENCRYPTED_FAIL_LINK);
+				}
+				document.body.innerHTML = "<h1 class='text-red-500 text-xl'>Security Alert Detected!</h1>";
+				throw new Error("Debugging Not Allowed");
+			}
+		};
+		setInterval(detectDevTools, 1000);
+		
+
+		function checkPassword(event) {
+			event.preventDefault();
+			detectDevTools();
+			
+			try {
+				const input = CryptoJS.SHA256(document.getElementById("password").value + "SALT_NAMCLOUD").toString();
+				const realPassword = decrypt(ENCRYPTED_PASSWORD);
+				
+				if(CryptoJS.SHA256(realPassword + "SALT_NAMCLOUD").toString() === input) {
+					document.getElementById("passwordContainer").classList.add("hidden");
+					document.getElementById("buttonContainer").classList.remove("hidden");
+					createButtons();
+					return false;
+				}
+				window.location.href = decrypt(ENCRYPTED_FAIL_LINK);
+			} catch (e) {
+				window.location.href = decrypt(ENCRYPTED_FAIL_LINK);
+			}
+			return false;
+		}
+		
+
+		function createButtons() {
+			const container = document.getElementById("buttonContainer");
+			const trueLink = decrypt(ENCRYPTED_SUCCESS_LINK);
+			const failLink = decrypt(ENCRYPTED_FAIL_LINK);
+		
+	
+			const colors = [
+				{ bg: "#ffd700", text: "Gold", pos: "top-20 left-20" },
+				{ bg: "#0f52ba", text: "Navy", pos: "top-20 right-20" },
+				{ bg: "#800020", text: "Burgundy", pos: "bottom-20 left-20" },
+				{ bg: "#ff0000", text: "Red", pos: "bottom-20 right-20" }
+			];
+			
+	
+			colors.sort(() => Math.random() - 0.5);
+			
+		
+			colors.forEach((color) => {
+				const button = document.createElement("div");
+				button.className = `gem-button ${color.pos}`;
+				button.style.backgroundColor = color.bg;
+				button.style.boxShadow = `inset 0 0 15px rgba(255, 255, 255, 0.3), ${button.style.boxShadow}`;
+				button.textContent = color.text;
+				
+				button.onclick = function() {
+					detectDevTools();
+					window.location.href = color.bg === "#ff0000" ? trueLink : failLink;
+				};
+				
+				container.appendChild(button);
+				button.style.animation = `float ${2 + Math.random() * 3}s infinite`;
+			});
+		}
+		
+
+		Object.freeze(window.alert);
+		Object.freeze(window.console);
+		window.addEventListener('contextmenu', e => e.preventDefault());
+	</script>
+<body>
+<html>
+		
+		
+		
+		
